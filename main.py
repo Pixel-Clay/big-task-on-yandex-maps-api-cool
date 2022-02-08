@@ -1,16 +1,37 @@
-# This is a sample Python script.
+import os
+import sys
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import pygame
+import requests
 
+ll = ','.join(input('введите координаты (через пробел) ').split())
+# параметр spn отвечает за область показа, можно использовать для масштабирования
+#                                                    &spn=23,23
+#                                                        V
+map_request = f"http://static-maps.yandex.ru/1.x/?ll={ll}&l=sat"
+response = requests.get(map_request)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+if not response:
+    print("Ошибка выполнения запроса:")
+    print(map_request)
+    print("Http статус:", response.status_code, "(", response.reason, ")")
+    sys.exit(1)
 
+# Запишем полученное изображение в файл.
+map_file = "map.png"
+with open(map_file, "wb") as file:
+    file.write(response.content)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# Инициализируем pygame
+pygame.init()
+screen = pygame.display.set_mode((600, 450))
+# Рисуем картинку, загружаемую из только что созданного файла.
+screen.blit(pygame.image.load(map_file), (0, 0))
+# Переключаем экран и ждем закрытия окна.
+pygame.display.flip()
+while pygame.event.wait().type != pygame.QUIT:
+    pass
+pygame.quit()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# Удаляем за собой файл с изображением.
+os.remove(map_file)
