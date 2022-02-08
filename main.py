@@ -1,37 +1,42 @@
-import os
-import sys
+import pygame, requests, sys, os
 
-import pygame
-import requests
 
-ll = ','.join(input('введите координаты (через пробел) ').split())
-# параметр spn отвечает за область показа, можно использовать для масштабирования
-#                                                    &spn=23,23
-#                                                        V
-map_request = f"http://static-maps.yandex.ru/1.x/?ll={ll}&l=sat"
-response = requests.get(map_request)
+class MapParams(object):
+    def __init__(self):
+        self.x = 65.665279
+        self.y = 50.813492
+        self.zoom = 5
+        self.type = "map"
 
-if not response:
-    print("Ошибка выполнения запроса:")
-    print(map_request)
-    print("Http статус:", response.status_code, "(", response.reason, ")")
-    sys.exit(1)
+    def ll(self):
+        return str(self.y) + "," + str(self.x)
 
-# Запишем полученное изображение в файл.
-map_file = "map.png"
-with open(map_file, "wb") as file:
-    file.write(response.content)
+    def update(self, event):
+        if event.key == pygame.K_PAGEUP and self.zoom < 19:
+            self.zoom += 1
+        elif event.key == pygame.K_PAGEUP and self.zoom > 2:
+            self.zoom -= 1
 
-# Инициализируем pygame
-pygame.init()
-screen = pygame.display.set_mode((600, 450))
-# Рисуем картинку, загружаемую из только что созданного файла.
-screen.blit(pygame.image.load(map_file), (0, 0))
-# Переключаем экран и ждем закрытия окна.
-pygame.display.flip()
-while pygame.event.wait().type != pygame.QUIT:
-    pass
-pygame.quit()
+
+def load_map(mp):
+    map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=mp.ll(), z=mp.zoom, type=mp.type)
+    response = requests.get(map_request)
+    if not response:
+        print("Ошибка выполнения запроса:")
+        print(map_request)
+        print("Http статус:", response.status_code, "(", response.reason, ")")
+        sys.exit(1)
+
+    map_file = "map.png"
+    try:
+        with open(map_file, "wb") as file:
+            file.write(response.content)
+    except IOError as ex:
+        print("Ошибка записи временного файла:", ex)
+        sys.exit(2)
+    return map_file
+
+
 
 # Удаляем за собой файл с изображением.
 os.remove(map_file)
